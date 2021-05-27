@@ -1,0 +1,85 @@
+version: '3.4'
+
+services:
+  mssqldata:
+    image: microsoft/mssql-server-linux
+    networks: 
+      - dockerserver
+    entrypoint: /bin/bash
+  
+  sqlserver:
+     image: microsoft/mssql-server-linux
+     container_name: mssqlserver
+     hostname: mssqls-server
+     networks: 
+       - dockerserver
+     ports:
+       - 1433:1433
+     volumes:
+       - /var/opt/mssql
+       - ./:/usr/src/app 
+     working_dir: /usr/src/app 
+     command: sh -c ' chmod +x ./entrypoint.sh; ./entrypoint.sh & /opt/mssql/bin/sqlservr;'
+     environment:
+       ACCEPT_EULA: Y
+       SA_PASSWORD: 1234ABcd
+       DATABASE_NAME: Acesso
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.13.0
+    volumes:
+      - ./esdata:/usr/share/elasticsearch/data   
+    container_name: elasticsearch
+    networks: 
+      - dockerserver
+    ports:
+      - "9200:9200"
+    environment:
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.type=single-node
+      
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.13.0
+    container_name: kibana
+    networks: 
+      - dockerserver
+    ports:
+     - "5601:5601"
+    depends_on:
+     - elasticsearch
+  
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    networks: 
+      - dockerserver
+    ports:
+        - 5672:5672
+        - 15672:15672  
+
+  testacesso:
+     image: baldini/testacesso
+     container_name: testacesso
+     networks: 
+      - dockerserver
+     ports:
+       - 5000:80
+
+  acessochallengeapi:
+    image: acessochallengeapi
+    build:
+      context: .
+      dockerfile: AcessoChallenge.Api/Dockerfile
+    networks: 
+      - dockerserver
+    ports:
+      - 5486:5486
+    depends_on:
+      - kibana
+      - testacesso
+      - sqlserver
+      - rabbitmq
+
+networks:
+  dockerserver:

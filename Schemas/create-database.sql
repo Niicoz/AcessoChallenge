@@ -1,0 +1,16 @@
+IF DB_ID (N'$(DATABASE_NAME)') IS NOT NULL
+DROP DATABASE $(DATABASE_NAME);
+GO
+
+CREATE DATABASE $(DATABASE_NAME);
+GO
+
+USE $(DATABASE_NAME)
+GO
+
+CREATE TABLE [dbo].[FundTransfer](
+	[Id] [uniqueidentifier] NOT NULL,
+	[Message] [varchar](100) NULL,
+	[Status] [tinyint] NOT NULL
+) ON [PRIMARY]
+GO
